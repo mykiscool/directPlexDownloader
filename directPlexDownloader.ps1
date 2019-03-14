@@ -43,32 +43,4 @@ $actualurl = $url + "/library/metadata/" + $id + "?X-Plex-Token=" + $token
 # search xml for real download path
 [xml]$xml = (New-Object System.Net.WebClient).DownloadString($actualurl)
 $dl_url =  $url + "$($xml.MediaContainer.Video.Media.Part.key)" + "?download=1&X-Plex-Token=" + $token
-$filename = Split-Path $($xml.MediaContainer.Video.Media.Part.file) -Leaf
-
-# download
-$myjob = Start-BitsTransfer -Source $dl_url -Destination "$path\$filename" -DisplayName "Downloading ..." -Description $filename -Asynchronous
-
-while ((Get-BitsTransfer | ? { $_.JobState -eq "Transferring" }).Count -gt 0) {     
-    $totalbytes=0;    
-    $bytestransferred=0; 
-    $timeTaken = 0;    
-    foreach ($job in (Get-BitsTransfer | ? { $_.JobState -eq "Transferring" } | Sort-Object CreationTime)) {         
-        $totalbytes += [math]::round($job.BytesTotal /1MB);         
-        $bytestransferred += [math]::round($job.bytestransferred /1MB)    
-        if ($timeTaken -eq 0) { 
-            #Get the time of the oldest transfer aka the one that started first
-            $timeTaken = ((Get-Date) - $job.CreationTime).TotalMinutes 
-        }
-    }    
-    #TimeRemaining = (TotalFileSize - BytesDownloaded) * TimeElapsed/BytesDownloaded
-    if ($totalbytes -gt 0) {        
-        [int]$timeLeft = ($totalBytes - $bytestransferred) * ($timeTaken / $bytestransferred)
-        [int]$pctComplete = $(($bytestransferred*100)/$totalbytes);     
-        Write-Progress -Status "Downloading $bytestransferred of $totalbytes MB ($pctComplete%). $timeLeft minutes remaining." -Activity "Downloading $filename." -PercentComplete $pctComplete  
-    }
-    
-}
-
-Write-Host "Download Completed in: $((Get-Date).Subtract($start_time).Seconds) Seconds" -ForegroundColor green
-Write-Host -NoNewLine 'Press any key to exit...';
-$null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown');
+Start-Process "chrome.exe" "$dl_url"
